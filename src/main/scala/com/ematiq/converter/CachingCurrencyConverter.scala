@@ -3,14 +3,13 @@ package com.ematiq.converter
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import com.ematiq.CurrencyConverter._
+import com.ematiq.ExchangeApp.executionContext
 import com.ematiq.api.{CurrConvExtractor, ExchangeRateExtractor}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.time.LocalDateTime
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scala.concurrent._
-import ExecutionContext.Implicits.global
 
 object CachingCurrencyConverter {
 

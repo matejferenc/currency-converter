@@ -1,10 +1,10 @@
 package com.ematiq.api
 
 import akka.http.scaladsl.model.{HttpRequest, Uri}
+import com.ematiq.ExchangeApp.executionContext
 import com.ematiq.domain.RateExtractionQuery
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
+import scala.concurrent.Future
 
 trait Extractor[T] {
   

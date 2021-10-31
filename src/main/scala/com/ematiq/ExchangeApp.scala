@@ -7,6 +7,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.util.Timeout
 import com.ematiq.CurrencyConverter.{CurrencyConversionFailure, CurrencyConversionQuery, CurrencyConversionResponse, CurrencyConversionSuccess}
 import com.ematiq.domain.{Bet, RateExtractionQuery}
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, RootJsonFormat}
@@ -35,6 +36,7 @@ object ExchangeApp extends App with JsonSupport {
   implicit val actorSystem: ActorSystem[CurrencyConversionQuery] = ActorSystem(CurrencyConverter(), "CurrencyConverter")
   val currencyConverter: ActorRef[CurrencyConversionQuery] = actorSystem
   implicit val executionContext: ExecutionContextExecutor = actorSystem.executionContext
+  implicit val timeout: Timeout = Timeout(5.seconds)
   val desiredCurrency = "EUR"
   
   private def convertStake(stake: BigDecimal, rate: BigDecimal) = {
@@ -46,7 +48,7 @@ object ExchangeApp extends App with JsonSupport {
       post {
         entity(as[Bet]) { bet =>
           val result: Future[CurrencyConversionResponse] = currencyConverter.ask(ref =>
-            CurrencyConversionQuery(RateExtractionQuery(bet.currency, desiredCurrency, bet.date.toLocalDate), ref))(timeout = 15.seconds, scheduler = actorSystem.scheduler)
+            CurrencyConversionQuery(RateExtractionQuery(bet.currency, desiredCurrency, bet.date.toLocalDate), ref))
           onComplete(result) {
             case Success(CurrencyConversionSuccess(rate)) => complete(bet.copy(currency = desiredCurrency, stake = convertStake(bet.stake, rate)))
             case Success(CurrencyConversionFailure(message)) => complete(InternalServerError, message)

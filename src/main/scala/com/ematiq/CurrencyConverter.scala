@@ -1,15 +1,13 @@
 package com.ematiq
 
-import akka.actor.typed.scaladsl.AskPattern.Askable
+import akka.actor.typed.scaladsl.AskPattern.{Askable, schedulerFromActorSystem}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import com.ematiq.ExchangeApp.actorSystem
+import com.ematiq.ExchangeApp.{actorSystem, executionContext, timeout}
 import com.ematiq.converter.CachingCurrencyConverter
 import com.ematiq.domain.RateExtractionQuery
 
 import java.time.LocalDate
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 object CurrencyConverter {
@@ -38,7 +36,7 @@ object CurrencyConverter {
         val actorRef = cache.getOrElse(currencyDatePair, spawnConverterActor(actorName))
         val responseFuture = actorRef.ask[CurrencyConversionResponse](ref => 
           query.copy(replyTo = ref)
-        )(timeout = 20.seconds, scheduler = actorSystem.scheduler)
+        )
         responseFuture.onComplete {
           case Success(currencyConversionResponse) => query.replyTo ! currencyConversionResponse
           case Failure(throwable) => query.replyTo ! CurrencyConversionFailure(throwable.getMessage)
